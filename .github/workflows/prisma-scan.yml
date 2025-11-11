@@ -1,0 +1,37 @@
+name: Prisma Cloud IaC Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  prisma_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Instalar Twistcli
+        run: |
+          curl -L -o twistcli ${{ secrets.PRISMA_CONSOLE_URL }}/api/v1/util/twistcli
+          chmod +x twistcli
+          sudo mv twistcli /usr/local/bin/
+
+      - name: Rodar scan com Twistcli
+        env:
+          PRISMA_URL: ${{ secrets.PRISMA_CONSOLE_URL }}
+          PRISMA_USER: ${{ secrets.PRISMA_ACCESS_KEY }}
+          PRISMA_PASS: ${{ secrets.PRISMA_SECRET_KEY }}
+        run: |
+          twistcli coderepo scan \
+            --address $PRISMA_URL \
+            --user $PRISMA_USER \
+            --password "$PRISMA_PASS" \
+            --details \
+            --publish .
+
+      - name: Resultado
+        run: echo "✅ Scan de IaC concluído e resultados enviados ao Prisma Cloud"
+
