@@ -4,34 +4,34 @@ on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   prisma_scan:
     runs-on: ubuntu-latest
+    env:
+      PRISMA_URL: ${{ secrets.PRISMA_URL }}
+      PRISMA_USER: ${{ secrets.PRISMA_USER }}
+      PRISMA_PASS: ${{ secrets.PRISMA_PASS }}
+
     steps:
       - name: Checkout código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Instalar Twistcli
+      - name: Instalar TwistCLI
         run: |
-          curl -L -o twistcli ${{ secrets.PRISMA_CONSOLE_URL }}/api/v1/util/twistcli
+          echo "Baixando TwistCLI da console Prisma Cloud..."
+          echo "Usando URL: ${PRISMA_URL}"
+          curl -L -o twistcli "${PRISMA_URL}/api/v1/util/twistcli"
           chmod +x twistcli
-          sudo mv twistcli /usr/local/bin/
+          sudo mv twistcli /usr/local/bin/twistcli
 
-      - name: Rodar scan com Twistcli
-        env:
-          PRISMA_URL: ${{ secrets.PRISMA_CONSOLE_URL }}
-          PRISMA_USER: ${{ secrets.PRISMA_ACCESS_KEY }}
-          PRISMA_PASS: ${{ secrets.PRISMA_SECRET_KEY }}
+      - name: Executar scan IaC
         run: |
-          twistcli coderepo scan \
-            --address $PRISMA_URL \
-            --user $PRISMA_USER \
-            --password "$PRISMA_PASS" \
+          echo "Executando scan IaC com TwistCLI..."
+          twistcli coderepo scan . \
+            --address "${PRISMA_URL}" \
+            --user "${PRISMA_USER}" \
+            --password "${PRISMA_PASS}" \
             --details \
-            --publish .
-
-      - name: Resultado
-        run: echo "✅ Scan de IaC concluído e resultados enviados ao Prisma Cloud"
+            --publish
 
