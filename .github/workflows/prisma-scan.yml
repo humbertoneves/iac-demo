@@ -9,7 +9,7 @@ jobs:
   prisma_scan:
     runs-on: ubuntu-latest
     env:
-      PRISMA_API_URL: ${{ secrets.PRISMA_API_URL }}
+      PRISMA_URL: ${{ secrets.PRISMA_URL }}
       PRISMA_ACCESS_KEY: ${{ secrets.PRISMA_ACCESS_KEY }}
       PRISMA_SECRET_KEY: ${{ secrets.PRISMA_SECRET_KEY }}
 
@@ -19,20 +19,41 @@ jobs:
 
       - name: Instalar TwistCLI
         run: |
-          echo "Baixando TwistCLI da console Prisma Cloud..."
-          echo "Usando URL: ${PRISMA_API_URL}"
-          curl -L -o twistcli "${PRISMA_API_URL}/api/v1/util/twistcli"
+          echo "🔄 Baixando TwistCLI da console Prisma Cloud..."
+          echo "➡️  URL: ${PRISMA_URL}"
+          curl -L -o twistcli "${PRISMA_URL}/api/v1/util/twistcli" || {
+            echo "❌ Falha ao baixar o TwistCLI. Verifique o PRISMA_URL!"
+            exit 1
+          }
           chmod +x twistcli
           sudo mv twistcli /usr/local/bin/twistcli
 
       - name: Executar scan IaC
         run: |
-          echo "Executando scan IaC com TwistCLI (autenticação por Access Key)..."
+          echo "🚀 Executando scan IaC com TwistCLI..."
           twistcli coderepo scan . \
             --ci-keys \
-            --address "${PRISMA_API_URL}" \
+            --address "${PRISMA_URL}" \
             --user "${PRISMA_ACCESS_KEY}" \
             --password "${PRISMA_SECRET_KEY}" \
             --details \
             --publish
+
+      - name: Salvar relatório JSON
+        if: always()
+        run: |
+          mkdir -p results
+          twistcli coderepo scan . \
+            --ci-keys \
+            --address "${PRISMA_URL}" \
+            --user "${PRISMA_ACCESS_KEY}" \
+            --password "${PRISMA_SECRET_KEY}" \
+            --output-file results/scan.json || true
+        continue-on-error: true
+
+      - name: Upload do relatório
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-scan-report
+          path: results/scan.json
 
