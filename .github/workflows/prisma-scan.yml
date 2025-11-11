@@ -9,9 +9,9 @@ jobs:
   prisma_scan:
     runs-on: ubuntu-latest
     env:
-      PRISMA_URL: ${{ secrets.PRISMA_URL }}
-      PRISMA_USER: ${{ secrets.PRISMA_USER }}
-      PRISMA_PASS: ${{ secrets.PRISMA_PASS }}
+      PRISMA_API_URL: ${{ secrets.PRISMA_API_URL }}
+      PRISMA_ACCESS_KEY: ${{ secrets.PRISMA_ACCESS_KEY }}
+      PRISMA_SECRET_KEY: ${{ secrets.PRISMA_SECRET_KEY }}
 
     steps:
       - name: Checkout código
@@ -20,18 +20,19 @@ jobs:
       - name: Instalar TwistCLI
         run: |
           echo "Baixando TwistCLI da console Prisma Cloud..."
-          echo "Usando URL: ${PRISMA_URL}"
-          curl -L -o twistcli "${PRISMA_URL}/api/v1/util/twistcli"
+          echo "Usando URL: ${PRISMA_API_URL}"
+          curl -L -o twistcli "${PRISMA_API_URL}/api/v1/util/twistcli"
           chmod +x twistcli
           sudo mv twistcli /usr/local/bin/twistcli
 
       - name: Executar scan IaC
         run: |
-          echo "Executando scan IaC com TwistCLI..."
+          echo "Executando scan IaC com TwistCLI (autenticação por Access Key)..."
           twistcli coderepo scan . \
-            --address "${PRISMA_URL}" \
-            --user "${PRISMA_USER}" \
-            --password "${PRISMA_PASS}" \
+            --ci-keys \
+            --address "${PRISMA_API_URL}" \
+            --user "${PRISMA_ACCESS_KEY}" \
+            --password "${PRISMA_SECRET_KEY}" \
             --details \
             --publish
 
